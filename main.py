@@ -75,7 +75,12 @@ def download_chapter(url):
         filename = img_url.split('/')[-1]
         print("Downloading %s %s %s..." % (title, chapter, filename))
         dir_filename = os_dir + "/" + os.path.basename(img_url)
-        urllib.request.urlretrieve(img_url, dir_filename)
+        try:
+            urllib.request.urlretrieve(img_url, dir_filename)
+        except OSError:
+            dir_filename, dummy = dir_filename.split("?")
+            urllib.request.urlretrieve(img_url, dir_filename)
+
         filenames.append(dir_filename)
 
 #    convert_to_pdf(os_dir, chapter, filenames)
@@ -94,13 +99,11 @@ def download_manga(url, chapter=False, min_max=False):
     max_stream_len = max(stream_lens)
     max_idx = stream_lens.index(max_stream_len)
     best_stream = streams[max_idx]
+#    best_stream = streams[2]           manual override
 
     chapters = best_stream.find_all("li")
     for c in chapters[::-1]:
-#        print(c)
         chapter_url = c.em.find_all("a")[-1]['href']
- #       print("hafizh was herer")
-  #      print(chapter_url)
         try: 
             chapter_no = float(parse_url_to_chapter_info(chapter_url)[2][1: ])
             if chapter and chapter_no == chapter:
