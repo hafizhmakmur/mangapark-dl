@@ -17,7 +17,11 @@ def parse_url_to_chapter_info(url):
     url = re.sub("http://", '', url)
     url = re.sub("mangapark.me", '', url)
     url = re.sub("/manga/", '', url)
-    title, version, chapter = url.split("/")
+    try:
+        title, version, chapter = url.split("/")
+    except ValueError:
+        title, version, volume, chapter = url.split("/")
+
     return title, version, chapter, url
 
 
@@ -63,7 +67,7 @@ def download_chapter(url):
     except ValueError as e:
         page = urllib.request.urlopen("http://mangapark.me" + url)
 
-    soup = BeautifulSoup(page)
+    soup = BeautifulSoup(page,"lxml")
     imgs_wrappers = soup.find_all("a", {"class": "img-link"})
     filenames = []
     for i in imgs_wrappers:
@@ -74,12 +78,12 @@ def download_chapter(url):
         urllib.request.urlretrieve(img_url, dir_filename)
         filenames.append(dir_filename)
 
-    convert_to_pdf(os_dir, chapter, filenames)
+#    convert_to_pdf(os_dir, chapter, filenames)
 
 
 def download_manga(url, chapter=False, min_max=False):
     page = urllib.request.urlopen(url)
-    soup = BeautifulSoup(page)
+    soup = BeautifulSoup(page,"lxml")
 
     streams = soup.find_all("div", {"class": "stream"})
     stream_lens = []
@@ -93,14 +97,20 @@ def download_manga(url, chapter=False, min_max=False):
 
     chapters = best_stream.find_all("li")
     for c in chapters[::-1]:
+#        print(c)
         chapter_url = c.em.find_all("a")[-1]['href']
-        chapter_no = float(parse_url_to_chapter_info(chapter_url)[2][1: ])
-        if chapter and chapter_no == chapter:
-            download_chapter(chapter_url)
-            break
-        if min_max and chapter_no >= min_max[0] and chapter_no <= min_max[1]:
-            download_chapter(chapter_url)
-            continue
+ #       print("hafizh was herer")
+  #      print(chapter_url)
+        try: 
+            chapter_no = float(parse_url_to_chapter_info(chapter_url)[2][1: ])
+            if chapter and chapter_no == chapter:
+                download_chapter(chapter_url)
+                break
+            if min_max and chapter_no >= min_max[0] and chapter_no <= min_max[1]:
+                download_chapter(chapter_url)
+                continue
+        except ValueError:
+            print("Invalid chapter number " + chapter_url)
 
 
 def main():
@@ -119,7 +129,6 @@ def main():
         download_manga(args.manga_url, min_max=[float(x) for x in args.chapters])
     elif args.chapter != None:
         download_manga(args.manga_url, chapter=int(args.chapter))
-
 
 if __name__ == "__main__":
     main()
